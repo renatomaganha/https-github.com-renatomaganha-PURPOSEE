@@ -277,13 +277,20 @@ const TagCategoryCard: React.FC<{
 export const TagManagement: React.FC<TagManagementProps> = ({ tags, onAddTag, onUpdateTag, onDeleteTag }) => {
 
     const tagsByCategory = useMemo(() => {
-        return tags.reduce((acc, tag) => {
+        const grouped = tags.reduce((acc, tag) => {
             if (!acc[tag.category]) {
                 acc[tag.category] = [];
             }
             acc[tag.category].push(tag);
             return acc;
         }, {} as Record<TagCategory, Tag[]>);
+
+        // Ordenar cada categoria em ordem alfabética
+        Object.keys(grouped).forEach(cat => {
+            grouped[cat as TagCategory].sort((a, b) => a.name.localeCompare(b.name));
+        });
+
+        return grouped;
     }, [tags]);
 
     return (

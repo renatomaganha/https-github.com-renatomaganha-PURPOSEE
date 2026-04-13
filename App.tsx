@@ -311,7 +311,7 @@ function App() {
 
   // Função centralizada de busca de TAGS
   const refreshTags = useCallback(async () => {
-    const { data, error } = await supabase.from('tags').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('tags').select('*').order('name', { ascending: true });
     if (data) setTags(data);
     if (error) console.error("Erro ao carregar tags:", error.message);
   }, []);
