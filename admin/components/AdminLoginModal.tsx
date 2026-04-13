@@ -13,7 +13,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ onClose, onLog
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const ADMIN_EMAIL = 'renat0maganhaaa@gmail.com';
+    const ADMIN_EMAILS = ['renat0maganhaaa@gmail.com', '19reiss@gmail.com'];
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +31,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ onClose, onLog
             return;
         }
 
-        if (data.user && data.user.email?.toLowerCase() === ADMIN_EMAIL) {
+        if (data.user && data.user.email && ADMIN_EMAILS.includes(data.user.email.toLowerCase())) {
             // A mudança de estado será capturada pelo listener no AdminApp.tsx
             onLoginSuccess();
         } else {

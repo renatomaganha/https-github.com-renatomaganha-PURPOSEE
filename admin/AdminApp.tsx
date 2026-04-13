@@ -40,7 +40,7 @@ export default function AdminApp({
     const [isLoading, setIsLoading] = useState(true);
     const [logoUrl] = useState<string | null>('https://ojsgrhaopwwqpoyayumb.supabase.co/storage/v1/object/public/logoo/PURPOSEee%20copy.png');
 
-    const ADMIN_EMAIL = 'renat0maganhaaa@gmail.com';
+    const ADMIN_EMAILS = ['renat0maganhaaa@gmail.com', '19reiss@gmail.com'];
 
     // Estados Reais do Banco
     const [view, setView] = useState<AdminView>('dashboard');
@@ -167,7 +167,7 @@ export default function AdminApp({
         const checkSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user?.email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim()) {
+                if (session?.user?.email && ADMIN_EMAILS.includes(session.user.email.toLowerCase().trim())) {
                     console.log("Admin: Sessão administrativa confirmada.");
                     setIsAdminAuthenticated(true);
                     setIsLoading(false);
@@ -185,7 +185,7 @@ export default function AdminApp({
         checkSession();
 
         const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user?.email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim()) {
+            if (session?.user?.email && ADMIN_EMAILS.includes(session.user.email.toLowerCase().trim())) {
                 setIsAdminAuthenticated(true);
                 setIsLoginModalOpen(false);
             } else {
@@ -305,7 +305,7 @@ export default function AdminApp({
             case 'dashboard': return <Dashboard users={users} reports={reports} supportTickets={supportTickets} />;
             case 'users': return <UserManagement users={users} onViewDetails={fetchUserDetails} onAction={handleUserAction} onRefresh={fetchData} />;
             case 'marketing': return <MarketingTools isPremiumSaleActive={isPremiumSaleActive} onPremiumSaleToggle={setIsPremiumSaleActive} />;
-            case 'analytics': return <Analytics />;
+            case 'analytics': return <Analytics users={users} reports={reports} supportTickets={supportTickets} />;
             case 'affiliates': return <AffiliateManagement />;
             case 'reports': return <ReportManagement reports={reports} users={users} onViewDetails={setReportDetail} />;
             case 'support': return <SupportManagement tickets={supportTickets} onViewDetails={setTicketDetail} />;

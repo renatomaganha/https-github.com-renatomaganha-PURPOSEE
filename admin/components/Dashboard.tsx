@@ -68,27 +68,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ users, reports, supportTic
                         <span className="text-[10px] font-black text-sky-500 bg-sky-50 px-3 py-1 rounded-full uppercase tracking-widest">Tempo Real</span>
                     </div>
                     <div className="space-y-4">
-                        {users.slice(0, 5).map((user, i) => (
-                            <div key={user.id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-4 last:border-0 last:pb-0">
+                        {/* Mostrar mistura de novos usuários e denúncias recentes */}
+                        {[
+                            ...users.slice(0, 3).map(u => ({ type: 'user', data: u, date: u.created_at })),
+                            ...reports.slice(0, 2).map(r => ({ type: 'report', data: r, date: r.created_at }))
+                        ]
+                        .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+                        .map((item, i) => (
+                            <div key={i} className="flex justify-between items-center text-sm border-b border-slate-50 pb-4 last:border-0 last:pb-0">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden">
-                                        {user.photos[0] ? (
-                                            <img src={user.photos[0]} className="w-full h-full object-cover" alt="" />
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.type === 'user' ? 'bg-slate-100' : 'bg-red-50'}`}>
+                                        {item.type === 'user' ? (
+                                            (item.data as UserProfile).photos[0] ? (
+                                                <img src={(item.data as UserProfile).photos[0]} className="w-full h-full object-cover rounded-xl" alt="" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-black">?</div>
+                                            )
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-300 font-black">?</div>
+                                            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-black text-slate-700 leading-none mb-1">{user.name}</p>
-                                        <p className="text-[11px] text-slate-400 font-medium">Entrou na comunidade</p>
+                                        <p className="font-black text-slate-700 leading-none mb-1">
+                                            {item.type === 'user' ? (item.data as UserProfile).name : 'Nova Denúncia'}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 font-medium">
+                                            {item.type === 'user' ? 'Entrou na comunidade' : (item.data as Report).reason}
+                                        </p>
                                     </div>
                                 </div>
                                 <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                                    {user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'Recente'}
+                                    {item.date ? new Date(item.date).toLocaleDateString('pt-BR') : 'Recente'}
                                 </span>
                             </div>
                         ))}
-                        {users.length === 0 && (
+                        {users.length === 0 && reports.length === 0 && (
                             <p className="text-center py-10 text-slate-400 font-medium italic">Nenhuma atividade registrada ainda.</p>
                         )}
                     </div>
