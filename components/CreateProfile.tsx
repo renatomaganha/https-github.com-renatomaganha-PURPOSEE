@@ -12,6 +12,7 @@ import { FaceVerification } from './FaceVerification';
 import { CheckBadgeIcon } from './icons/CheckBadgeIcon';
 import { ArrowPathIcon } from './icons/ArrowPathIcon';
 import { useToast } from '../contexts/ToastContext';
+import { getFallbackCityState } from '../lib/locationUtils';
 
 
 const allChurchFrequencies = Object.values(ChurchFrequency);
@@ -435,6 +436,11 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                     } catch (nominatimError) {
                         console.error("Nominatim fallback geocoding failed too:", nominatimError);
                     }
+                }
+
+                // Se não foi possível obter o nome exato da cidade por falhas nas APIs, usa o fallback baseado nas coordenadas
+                if (locationString === t('locationObtained') || !locationString || locationString.trim() === '') {
+                    locationString = getFallbackCityState(latitude, longitude);
                 }
 
                 setProfileData(prev => ({

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { UserProfile, DeletionFeedback, ReportReason, FilterState, Tag, VerificationStatus, Message } from './types';
 import { useAuth } from './auth/AuthContext';
 import { supabase } from './lib/supabaseClient';
+import { getFallbackCityState } from './lib/locationUtils';
 
 import { LandingPage } from './components/LandingPage';
 import { AuthModal } from './components/AuthModal';
@@ -398,6 +399,12 @@ function App() {
                                     console.error("Nominatim fallback geocoding failed too:", nominatimError);
                                 }
                             }
+                            
+                            // Se não foi possível obter o nome exato da cidade por falhas nas APIs, usa o fallback baseado nas coordenadas
+                            if (locationString === t('locationObtained') || !locationString || locationString.trim() === '') {
+                                locationString = getFallbackCityState(latitude, longitude);
+                            }
+                            
                             setCurrentUserProfile(prev => prev ? { ...prev, latitude, longitude, location: locationString } : null);
                             await supabase.from('user_profiles').update({ latitude, longitude, location: locationString }).eq('id', userProfile.id);
                         },
