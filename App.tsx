@@ -360,7 +360,7 @@ function App() {
                                     const data = await res.json();
                                     if (data) {
                                         let city = data.locality || data.city || '';
-                                        if (city.includes("Região Metropolitana") && data.locality) {
+                                        if (city.includes("Região Metropolitana") && data.locality && !data.locality.includes("Região Metropolitana")) {
                                             city = data.locality;
                                         }
                                         const state = data.principalSubdivision || '';
@@ -380,12 +380,16 @@ function App() {
                                 
                                 // 2. Try Nominatim (without custom User-Agent to avoid OPTIONS preflight block)
                                 try {
-                                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`);
+                                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1&accept-language=pt-BR,pt&email=19reiss@gmail.com`);
                                     if (res.ok) {
                                         const data = await res.json();
                                         if (data && data.address) {
-                                            const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
-                                            const state = data.address.state || '';
+                                            const addr = data.address;
+                                            let city = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || addr.suburb || addr.neighbourhood || addr.county || '';
+                                            if (city.includes("Região Metropolitana") && addr.suburb) {
+                                                city = addr.suburb;
+                                            }
+                                            const state = addr.state || addr.state_district || '';
                                             if (city && state) {
                                                 locationString = `${city}, ${state}`;
                                             } else if (city) {

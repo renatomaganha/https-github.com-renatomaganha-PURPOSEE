@@ -87,47 +87,39 @@ const appProfileToDbProfile = (appData: Partial<UserProfile>): any => {
 
     return {
         id: appData.id,
-        // email: appData.email, // Removido para evitar erro se a coluna não existir no user_profiles
-        name: appData.name,
-        age: appData.age,
-        dob: appData.dob,
-        gender: appData.gender,
-        seeking: appData.seeking,
-        location: appData.location,
+        name: appData.name || '',
+        age: appData.age || 0,
+        dob: appData.dob || '',
+        gender: appData.gender || Gender.MULHER,
+        seeking: appData.seeking || [Gender.HOMEM],
+        location: appData.location || '',
         latitude: appData.latitude || null,
         longitude: appData.longitude || null,
         photos: sanitizedPhotos,
-        private_photo: appData.privatePhoto,
-        video: appData.video,
-        bio: appData.bio,
-        denomination: appData.denomination,
-        church_frequency: appData.churchFrequency,
-        // Campos opcionais descomentados (enviarão null se vazios)
+        private_photo: appData.privatePhoto || null,
+        video: appData.video || null,
+        bio: appData.bio || '',
+        denomination: appData.denomination || "Não Denominacional",
+        church_frequency: appData.churchFrequency || ChurchFrequency.OCASIONALMENTE,
         church_name: appData.churchName || null,
         favorite_verse: appData.favoriteVerse || null,
         favorite_song: appData.favoriteSong || null,
-        // favorite_book: appData.favoriteBook || null, // Removido pois a coluna não existe no DB
-        key_values: appData.keyValues,
-        relationship_goal: appData.relationshipGoal,
-        marital_status: appData.maritalStatus,
-        partner_description: appData.partnerDescription,
-        interests: appData.interests,
-        languages: appData.languages,
-        is_verified: appData.isVerified,
-        // face_verification_status: appData.face_verification_status, // Removido pois a coluna não existe no DB
-        is_premium: appData.isPremium,
-        is_invisible_mode: appData.isInvisibleMode,
-        is_paused: appData.isPaused,
-        // height: appData.height, // Comentado
-        // zodiac_sign: appData.zodiacSign, // Comentado
-        // is_age_hidden: appData.isAgeHidden, // Comentado
-        // is_zodiac_hidden: appData.isZodiacHidden, // Comentado
-        super_likes_remaining: appData.superLikesRemaining,
-        super_like_reset_date: appData.superLikeResetDate,
-        boosts_remaining: appData.boostsRemaining,
-        boost_reset_date: appData.boostResetDate,
-        boost_is_active: appData.boostIsActive,
-        boost_expires_at: appData.boostExpiresAt,
+        key_values: appData.keyValues || [],
+        relationship_goal: appData.relationshipGoal || RelationshipGoal.NAO_SEI,
+        marital_status: appData.maritalStatus || MaritalStatus.SOLTEIRO,
+        partner_description: appData.partnerDescription || null,
+        interests: appData.interests || [],
+        languages: appData.languages || [],
+        is_verified: !!appData.isVerified,
+        is_premium: !!appData.isPremium,
+        is_invisible_mode: !!appData.isInvisibleMode,
+        is_paused: !!appData.isPaused,
+        super_likes_remaining: appData.superLikesRemaining !== undefined ? appData.superLikesRemaining : 5,
+        super_like_reset_date: appData.superLikeResetDate || null,
+        boosts_remaining: appData.boostsRemaining !== undefined ? appData.boostsRemaining : 1,
+        boost_reset_date: appData.boostResetDate || null,
+        boost_is_active: !!appData.boostIsActive,
+        boost_expires_at: appData.boostExpiresAt || null,
         updated_at: new Date().toISOString(),
     };
 };
@@ -398,7 +390,7 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                         const data = await res.json();
                         if (data) {
                             let city = data.locality || data.city || '';
-                            if (city.includes("Região Metropolitana") && data.locality) {
+                            if (city.includes("Região Metropolitana") && data.locality && !data.locality.includes("Região Metropolitana")) {
                                 city = data.locality;
                             }
                             const state = data.principalSubdivision || '';
@@ -416,14 +408,18 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                 } catch (bdcError) {
                     console.warn("BigDataCloud geocoding failed, trying Nominatim fallback...", bdcError);
                     
-                    // 2. Try Nominatim (without custom User-Agent to avoid OPTIONS preflight block)
+                    // 2. Try Nominatim with forced language and email query parameters for prioritized rate-limits
                     try {
-                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`);
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1&accept-language=pt-BR,pt&email=19reiss@gmail.com`);
                         if (res.ok) {
                             const data = await res.json();
                             if (data && data.address) {
-                                const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
-                                const state = data.address.state || '';
+                                const addr = data.address;
+                                let city = addr.city || addr.town || addr.village || addr.municipality || addr.city_district || addr.suburb || addr.neighbourhood || addr.county || '';
+                                if (city.includes("Região Metropolitana") && addr.suburb) {
+                                    city = addr.suburb;
+                                }
+                                const state = addr.state || addr.state_district || '';
                                 if (city && state) {
                                     locationString = `${city}, ${state}`;
                                 } else if (city) {
@@ -1008,24 +1004,33 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                             <p className="text-sm mt-1">Sua verificação está sendo analisada. Você pode finalizar o cadastro e será notificado quando o processo for concluído.</p>
                         </div>
                     ) : (
-                        <div className="text-center">
+                        <div className="text-center animate-fade-in">
                             <p className="text-sm text-slate-600 mb-6">{t('selfieVerificationDesc')}</p>
-                            <button onClick={startVerification} className="w-full bg-sky-600 text-white font-bold py-3 rounded-lg">
+                            <button onClick={startVerification} className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-lg shadow-md transition-all">
                                 {t('startVerification')}
+                            </button>
+                            <button onClick={handleSubmit} className="w-full mt-3 border border-slate-300 text-slate-600 hover:bg-slate-50 font-semibold py-2.5 rounded-lg transition-all text-sm">
+                                Pular verificação por enquanto
                             </button>
                         </div>
                     )}
 
-                    <button 
-                        onClick={handleSubmit} 
-                        disabled={isSubmitting || profileData.face_verification_status !== VerificationStatus.VERIFIED} 
-                        className="w-full bg-green-600 text-white font-bold py-3 rounded-lg disabled:bg-green-300 disabled:cursor-not-allowed mt-6"
-                    >
-                        {isSubmitting ? t('saving') : t('saveAndFinish')}
-                    </button>
-                     {profileData.face_verification_status !== VerificationStatus.VERIFIED && (
-                         <p className="text-xs text-center text-slate-500 mt-2">Você deve ser verificado para finalizar o cadastro.</p>
-                     )}
+                    {(profileData.face_verification_status === VerificationStatus.VERIFIED || 
+                      profileData.face_verification_status === VerificationStatus.PENDING || 
+                      profileData.face_verification_status === VerificationStatus.REJECTED) && (
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={isSubmitting} 
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg disabled:bg-green-300 disabled:cursor-not-allowed mt-6 transition-colors shadow-md"
+                        >
+                            {isSubmitting ? t('saving') : t('saveAndFinish')}
+                        </button>
+                    )}
+                    {profileData.face_verification_status !== VerificationStatus.VERIFIED && (
+                         <p className="text-xs text-center text-slate-500 mt-3">
+                             A verificação não é obrigatória para finalizar seu cadastro, mas perfis verificados ganham maior destaque e relevância.
+                         </p>
+                    )}
                 </div>
             )}
             
