@@ -105,7 +105,7 @@ const appProfileToDbProfile = (appData: Partial<UserProfile>): any => {
         church_name: appData.churchName || null,
         favorite_verse: appData.favoriteVerse || null,
         favorite_song: appData.favoriteSong || null,
-        favorite_book: appData.favoriteBook || null,
+        // favorite_book: appData.favoriteBook || null, // Removido pois a coluna não existe no DB
         key_values: appData.keyValues,
         relationship_goal: appData.relationshipGoal,
         marital_status: appData.maritalStatus,
@@ -386,16 +386,40 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
         setLocationError(null);
 
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 const { latitude, longitude } = position.coords;
-                const locationString = t('locationObtained');
+                let locationString = t('locationObtained');
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`, {
+                        headers: {
+                            'User-Agent': 'PurposeMatchApp/1.0'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.address) {
+                            const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
+                            const state = data.address.state || '';
+                            if (city && state) {
+                                locationString = `${city}, ${state}`;
+                            } else if (city) {
+                                locationString = city;
+                            } else if (state) {
+                                locationString = state;
+                            }
+                        }
+                    }
+                } catch (geocodeError) {
+                    console.error("Geocoding failed:", geocodeError);
+                }
+
                 setProfileData(prev => ({
                     ...prev,
                     latitude,
                     longitude,
                     location: locationString,
                 }));
-                 setIsGettingLocation(false);
+                setIsGettingLocation(false);
             },
             (err) => {
                 console.error("Geolocation error:", err.message);

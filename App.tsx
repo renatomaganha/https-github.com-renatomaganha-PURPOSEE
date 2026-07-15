@@ -350,7 +350,30 @@ function App() {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
                             const { latitude, longitude } = position.coords;
-                            const locationString = t('locationObtained');
+                            let locationString = t('locationObtained');
+                            try {
+                                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`, {
+                                    headers: {
+                                        'User-Agent': 'PurposeMatchApp/1.0'
+                                    }
+                                });
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if (data && data.address) {
+                                        const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
+                                        const state = data.address.state || '';
+                                        if (city && state) {
+                                            locationString = `${city}, ${state}`;
+                                        } else if (city) {
+                                            locationString = city;
+                                        } else if (state) {
+                                            locationString = state;
+                                        }
+                                    }
+                                }
+                            } catch (geocodeError) {
+                                console.error("Geocoding failed:", geocodeError);
+                            }
                             setCurrentUserProfile(prev => prev ? { ...prev, latitude, longitude, location: locationString } : null);
                             await supabase.from('user_profiles').update({ latitude, longitude, location: locationString }).eq('id', userProfile.id);
                         },
