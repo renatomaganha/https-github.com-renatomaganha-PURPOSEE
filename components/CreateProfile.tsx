@@ -389,17 +389,18 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 let locationString = t('locationObtained');
+                
+                // 1. Try BigDataCloud (Fast, reliable, standard browser CORS-friendly, no custom headers required)
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`, {
-                        headers: {
-                            'User-Agent': 'PurposeMatchApp/1.0'
-                        }
-                    });
+                    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`);
                     if (res.ok) {
                         const data = await res.json();
-                        if (data && data.address) {
-                            const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
-                            const state = data.address.state || '';
+                        if (data) {
+                            let city = data.locality || data.city || '';
+                            if (city.includes("Região Metropolitana") && data.locality) {
+                                city = data.locality;
+                            }
+                            const state = data.principalSubdivision || '';
                             if (city && state) {
                                 locationString = `${city}, ${state}`;
                             } else if (city) {
@@ -408,9 +409,32 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                                 locationString = state;
                             }
                         }
+                    } else {
+                        throw new Error(`BigDataCloud response not ok: ${res.status}`);
                     }
-                } catch (geocodeError) {
-                    console.error("Geocoding failed:", geocodeError);
+                } catch (bdcError) {
+                    console.warn("BigDataCloud geocoding failed, trying Nominatim fallback...", bdcError);
+                    
+                    // 2. Try Nominatim (without custom User-Agent to avoid OPTIONS preflight block)
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.address) {
+                                const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.city_district || data.address.suburb || '';
+                                const state = data.address.state || '';
+                                if (city && state) {
+                                    locationString = `${city}, ${state}`;
+                                } else if (city) {
+                                    locationString = city;
+                                } else if (state) {
+                                    locationString = state;
+                                }
+                            }
+                        }
+                    } catch (nominatimError) {
+                        console.error("Nominatim fallback geocoding failed too:", nominatimError);
+                    }
                 }
 
                 setProfileData(prev => ({
