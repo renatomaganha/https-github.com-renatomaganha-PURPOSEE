@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { UserProfile, Message } from '../types';
 import { VerifiedBadgeIcon } from './icons/VerifiedBadgeIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -381,7 +380,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ match, currentUserProfil
     setNewMessage(t('generating') + '...');
 
     try {
-        if (!process.env.API_KEY) {
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) {
             await new Promise(resolve => setTimeout(resolve, 1500));
             const mockSuggestion = getMockSuggestion(match.name);
             setNewMessage(mockSuggestion);
@@ -389,7 +389,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ match, currentUserProfil
             return;
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const conversationHistory = messages.slice(-10).map(m => {
             const content = m.media_type === 'image' ? '[Imagem]' : m.media_type === 'audio' ? '[Áudio]' : m.text;
             return `${m.sender_id === currentUserProfile.id ? currentUserProfile.name : match.name}: ${content}`;
@@ -413,13 +412,27 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ match, currentUserProfil
             t('geminiPromptInstructionFormat')
         ].join('\n');
         
-        // FIX: Updated model to gemini-3-flash-preview as per GenAI guidelines for basic text tasks
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
+        // Call the Gemini API via direct fetch to avoid importing @google/genai on the client-side
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
         });
 
-        const text = response.text?.trim().replace(/^"|"$/g, '') || "";
+        if (!response.ok) {
+            throw new Error(`Gemini REST API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().replace(/^"|"$/g, '') || "";
         setNewMessage(text);
 
     } catch (error) {

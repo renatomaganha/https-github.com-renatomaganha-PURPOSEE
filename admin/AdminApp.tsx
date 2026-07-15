@@ -96,7 +96,7 @@ export default function AdminApp({
             // Fetch Users
             const { data: usersData, error: uError } = await supabase
                 .from('user_profiles')
-                .select('*')
+                .select('id, name, age, dob, gender, seeking, location, latitude, longitude, photos, private_photo, video, bio, denomination, church_frequency, church_name, favorite_verse, favorite_song, key_values, relationship_goal, marital_status, partner_description, interests, languages, is_verified, face_verification_status, is_premium, is_invisible_mode, is_paused, super_likes_remaining, super_like_reset_date, boosts_remaining, boost_reset_date, boost_is_active, boost_expires_at, updated_at, height, zodiac_sign, is_age_hidden, is_zodiac_hidden')
                 .order('created_at', { ascending: false });
             
             if (uError) {

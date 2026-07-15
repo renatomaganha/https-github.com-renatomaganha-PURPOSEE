@@ -329,7 +329,7 @@ function App() {
         try {
           const { data, error } = await supabase
             .from('user_profiles')
-            .select('*')
+            .select('id, name, age, dob, gender, seeking, location, latitude, longitude, photos, private_photo, video, bio, denomination, church_frequency, church_name, favorite_verse, favorite_song, key_values, relationship_goal, marital_status, partner_description, interests, languages, is_verified, face_verification_status, is_premium, is_invisible_mode, is_paused, super_likes_remaining, super_like_reset_date, boosts_remaining, boost_reset_date, boost_is_active, boost_expires_at, updated_at, height, zodiac_sign, is_age_hidden, is_zodiac_hidden')
             .eq('id', session.user.id)
             .single();
 
@@ -467,7 +467,7 @@ function App() {
     if (appStatus !== 'app' || !session?.user) return;
 
     const loadAppData = async () => {
-      const { data: otherUsersData } = await supabase.from('user_profiles').select('*').neq('id', session.user.id);
+      const { data: otherUsersData } = await supabase.from('user_profiles').select('id, name, age, dob, gender, seeking, location, latitude, longitude, photos, private_photo, video, bio, denomination, church_frequency, church_name, favorite_verse, favorite_song, key_values, relationship_goal, marital_status, partner_description, interests, languages, is_verified, face_verification_status, is_premium, is_invisible_mode, is_paused, super_likes_remaining, super_like_reset_date, boosts_remaining, boost_reset_date, boost_is_active, boost_expires_at, updated_at, height, zodiac_sign, is_age_hidden, is_zodiac_hidden').neq('id', session.user.id);
       if (otherUsersData) setAllOtherUsers(otherUsersData.map(dbProfileToAppProfile));
 
       const { data: likesData } = await supabase.from('likes').select('liker_id, liked_id, is_super_like').or(`liker_id.eq.${session.user.id},liked_id.eq.${session.user.id}`);

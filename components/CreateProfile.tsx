@@ -111,6 +111,7 @@ const appProfileToDbProfile = (appData: Partial<UserProfile>): any => {
         interests: appData.interests || [],
         languages: appData.languages || [],
         is_verified: !!appData.isVerified,
+        face_verification_status: appData.face_verification_status || VerificationStatus.NOT_VERIFIED,
         is_premium: !!appData.isPremium,
         is_invisible_mode: !!appData.isInvisibleMode,
         is_paused: !!appData.isPaused,
@@ -238,7 +239,7 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
                 try {
                     const { data, error: fetchError } = await supabase
                         .from('user_profiles')
-                        .select('*')
+                        .select('id, name, age, dob, gender, seeking, location, latitude, longitude, photos, private_photo, video, bio, denomination, church_frequency, church_name, favorite_verse, favorite_song, key_values, relationship_goal, marital_status, partner_description, interests, languages, is_verified, face_verification_status, is_premium, is_invisible_mode, is_paused, super_likes_remaining, super_like_reset_date, boosts_remaining, boost_reset_date, boost_is_active, boost_expires_at, updated_at, height, zodiac_sign, is_age_hidden, is_zodiac_hidden')
                         .eq('id', user.id)
                         .single();
 
@@ -548,7 +549,7 @@ export const CreateProfile: React.FC<CreateProfileProps> = ({
             const { data, error: upsertError } = await supabase
                 .from('user_profiles')
                 .upsert(dbData, { onConflict: 'id' })
-                .select()
+                .select('id, name, age, dob, gender, seeking, location, latitude, longitude, photos, private_photo, video, bio, denomination, church_frequency, church_name, favorite_verse, favorite_song, key_values, relationship_goal, marital_status, partner_description, interests, languages, is_verified, face_verification_status, is_premium, is_invisible_mode, is_paused, super_likes_remaining, super_like_reset_date, boosts_remaining, boost_reset_date, boost_is_active, boost_expires_at, updated_at, height, zodiac_sign, is_age_hidden, is_zodiac_hidden')
                 .single();
 
             if (upsertError) {
